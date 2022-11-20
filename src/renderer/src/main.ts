@@ -7,12 +7,14 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faArrowLeft, faTrash } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import './index.css'
+import CreateGlossary from './pages/CreateGlossary.vue'
 
 library.add(faArrowLeft, faTrash)
 
 const routes: RouteRecordRaw[] = [
   { path: '/', component: Home },
-  { path: '/convert', component: ConvertFileFormat }
+  { path: '/convert', component: ConvertFileFormat },
+  { path: '/glossary', component: CreateGlossary }
 ]
 
 const router = createRouter({ history: createWebHashHistory(), routes })
