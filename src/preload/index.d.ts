@@ -7,6 +7,7 @@ declare global {
       addFilePaths: () => Promise<string[]>
       deleteTextFilePath: (index: number) => Promise<boolean>
       convertTextFiles: () => Promise<boolean>
+      clearList: () => Promise<boolean>
     }
   }
 }

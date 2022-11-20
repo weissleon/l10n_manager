@@ -7,19 +7,9 @@ import * as TOML from 'toml'
 import * as XLSX from 'xlsx'
 
 XLSX.set_fs(hi)
-// import * as reloader from 'electron-reloader'
 
-// try {
-//   reloader(module)
-// } catch {}
-
-// if (!app.isPackaged) {
-//   require('electron-reload')(__dirname)
-//   // require('electron-reloader')(module)
-// }
-
-let mainWindow = null
-const textFilePaths: string[] = []
+let mainWindow: BrowserWindow = null
+let textFilePaths: string[] = []
 
 function createWindow(): void {
   // Create the browser window.
@@ -93,7 +83,10 @@ ipcMain.handle('file:import', async () => {
   const MSG_SELECT_TEXT_FILE = 'Choose the text file to import'
   const result = await dialog.showOpenDialog(mainWindow, {
     message: MSG_SELECT_TEXT_FILE,
-    filters: [{ extensions: ['toml', 'json', 'xlsx'], name: 'Text File' }],
+    filters: [
+      { extensions: ['toml', 'json', 'xlsx'], name: 'Text File' },
+      { extensions: ['*'], name: 'All Files' }
+    ],
     properties: ['multiSelections']
   })
 
@@ -110,11 +103,22 @@ ipcMain.handle('file:import', async () => {
   return textFilePaths.map((filePath) => filePath.slice(filePath.lastIndexOf('\\') + 1))
 })
 
+ipcMain.handle('file:clear', async () => {
+  textFilePaths = []
+
+  return true
+})
+
 ipcMain.handle('file:convert', async () => {
   for (const filePath of textFilePaths) {
-    if (path.extname(filePath).toLowerCase() === '.toml') {
+    const extension = path.extname(filePath).toLowerCase()
+    const fileName = path.basename(filePath)
+    if (extension === '.toml') {
       const result = await loadTomlFile(filePath)
-      const fileName = path.basename(filePath)
+      await exportXlsx(fileName.slice(0, fileName.lastIndexOf('.')), result)
+    }
+    if (extension === '.json') {
+      const result = await loadJsonFIle(filePath)
       await exportXlsx(fileName.slice(0, fileName.lastIndexOf('.')), result)
     }
   }
@@ -134,9 +138,21 @@ const exportXlsx = async (fileName: string, input: [key: string, value: string][
   }
 }
 
-const readFile = async (filePath: string) => {
+const readFile = async (filePath: string): Promise<string> => {
   const fileData = await fs.readFile(filePath, { encoding: 'utf-8' })
   return fileData
+}
+
+const loadJsonFIle = async (filePath: string): Promise<[key: string, value: string][]> => {
+  const fileData = await readFile(filePath)
+  let finalData = null
+  try {
+    const jsonData = JSON.parse(fileData)
+    finalData = processObject(jsonData)
+  } catch (error) {
+    console.log(error)
+  }
+  return finalData
 }
 
 const loadTomlFile = async (filePath: string): Promise<[key: string, value: string][]> => {
@@ -152,24 +168,36 @@ const loadTomlFile = async (filePath: string): Promise<[key: string, value: stri
   return finalData
 }
 
-function processObject(object: Object) {
-  const procData = []
+function processObject(object: Object): [key: string, value: string][] {
+  const procData: [key: string, value: string][] = []
   for (const key in object) {
     switch (checkDataType(object[key])) {
-      case 'value':
+      case 'value': {
         procData.push([key, object[key].toString()])
 
         break
-      case 'array':
-        for (const value of object[key]) {
+      }
+      case 'array': {
+        for (const [index, value] of object[key].entries()) {
+          const arrKey = `${key}[${index}]`
           if (isObject(value)) {
+            console.log(value)
+            const data = processObject(value)
+            console.log(`Data inside array ${arrKey}: ${data}`)
+            for (const datum of data) {
+              const finalKey = `${arrKey}/${datum[0]}`
+              const value = datum[1]
+
+              procData.push([finalKey, value])
+            }
           } else {
-            procData.push([key, value.toString()])
+            procData.push([arrKey, value.toString()])
           }
         }
 
         break
-      case 'object':
+      }
+      case 'object': {
         const data = processObject(object[key])
 
         for (const datum of data) {
@@ -180,6 +208,7 @@ function processObject(object: Object) {
         }
 
         break
+      }
       default:
         break
     }
@@ -188,9 +217,9 @@ function processObject(object: Object) {
   return procData
 }
 
-function isValue(input) {
+function isValue(input): boolean {
   const type = typeof input
-  return type === 'string' || type === 'number'
+  return type === 'string' || type === 'number' || type === 'boolean'
 }
 
 function isObject(input) {

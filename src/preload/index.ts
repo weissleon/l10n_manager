@@ -9,6 +9,9 @@ const api = {
 
   convertTextFiles: async (): Promise<boolean> => {
     return await ipcRenderer.invoke('file:convert')
+  },
+  clearList: async (): Promise<boolean> => {
+    return await ipcRenderer.invoke('file:clear')
   }
 }
 
