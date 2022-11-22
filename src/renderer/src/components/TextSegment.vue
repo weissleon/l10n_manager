@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 
 
 const props = defineProps<{
@@ -8,13 +8,14 @@ const props = defineProps<{
 }>()
 
 
-const regex = computed(() => props.glossary?.join('|'))
+const regex = computed(() => props.glossary?.join('|').replace(/\+/gi, "\\$&"))
 
 
-// const highlightedText = computed(() => text !== undefined && regex.value === "" ? text : text?.replace(new RegExp(regex.value, 'gi'), '<span class="bg-yellow-400">$&</span>'))
-const highlightedText = computed(() => props.text !== undefined && regex.value === "" ? props.text : props.text?.replace(new RegExp(regex.value, 'gi'), '<span class="bg-yellow-400">$&</span>'))
+const highlightedText = computed(() => props.text !== undefined && regex.value === "" ? props.text : props.text?.replace(new RegExp(`${regex.value}`, 'gi'), '<span class="bg-yellow-400">$&</span>').replace(/(?<!span)\s/g, "&nbsp"))
 
-
+watch(highlightedText, () => {
+    console.log(highlightedText.value)
+})
 
 
 </script>
@@ -22,7 +23,7 @@ const highlightedText = computed(() => props.text !== undefined && regex.value =
 
 
 <template>
-    <div v-html="highlightedText" class="min-h-[3rem]">
+    <div v-html="highlightedText" class="flex justify-center text-center items-center min-h-[3rem]">
     </div>
 </template>
 

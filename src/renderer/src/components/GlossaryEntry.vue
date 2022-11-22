@@ -11,8 +11,8 @@ defineEmits<{
 </script>
 
 <template>
-    <div>
-        <input :value="modelValue"
+    <div class="w-full">
+        <input class="w-full" :value="modelValue"
             @keydown.enter="$emit('update:modelValue', ($event.target as HTMLInputElement).value.toLowerCase())"
             type="text">
     </div>

@@ -12,6 +12,25 @@ const api = {
   },
   clearList: async (): Promise<boolean> => {
     return await ipcRenderer.invoke('file:clear')
+  },
+  glossary: {
+    loadSourceTexts: async (): Promise<{ key: string; text: string }> => {
+      return await ipcRenderer.invoke('glossary:loadSourceTexts')
+    },
+    addGlossaryEntry: async (
+      entry: string
+    ): Promise<{ key: string; text: string; count: number }> => {
+      return await ipcRenderer.invoke('glossary:addGlossaryEntry')
+    },
+    updateGlossaryEntry: async (
+      key: string,
+      entry: string
+    ): Promise<{ key: string; text: string; count: number }> => {
+      return await ipcRenderer.invoke('glossary:updateGlossaryEntry')
+    },
+    exportGlossary: async (): Promise<boolean> => {
+      return await ipcRenderer.invoke('glossary:exportGlossary')
+    }
   }
 }
 

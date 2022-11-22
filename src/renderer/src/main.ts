@@ -4,12 +4,12 @@ import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router'
 import Home from './pages/Home.vue'
 import ConvertFileFormat from './pages/ConvertFileFormat.vue'
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faArrowLeft, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { faArrowLeft, faTrash, faGear } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 import './index.css'
 import CreateGlossary from './pages/CreateGlossary.vue'
 
-library.add(faArrowLeft, faTrash)
+library.add(faArrowLeft, faTrash, faGear)
 
 const routes: RouteRecordRaw[] = [
   { path: '/', component: Home },

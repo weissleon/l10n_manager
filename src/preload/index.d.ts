@@ -8,6 +8,15 @@ declare global {
       deleteTextFilePath: (index: number) => Promise<boolean>
       convertTextFiles: () => Promise<boolean>
       clearList: () => Promise<boolean>
+      glossary: {
+        loadSourceTexts: () => Promise<{ key: string; text: string }[]>
+        addGlossaryEntry: (entry: string) => Promise<{ key: string; text: string; count: number }>
+        updateGlossaryEntry: (
+          key: string,
+          entry: string
+        ) => Promise<{ key: string; text: string; count: number }>
+        exportGlossary: () => Promise<boolean>
+      }
     }
   }
 }

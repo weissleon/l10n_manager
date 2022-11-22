@@ -5,12 +5,19 @@ import * as fs from 'fs/promises'
 import * as hi from 'fs'
 import * as TOML from 'toml'
 import * as XLSX from 'xlsx'
+import * as crypto from 'node:crypto'
 
 XLSX.set_fs(hi)
 
 let mainWindow: BrowserWindow = null
 let textFilePaths: string[] = []
-
+let glossarySourceTexts: { key: string; text: string }[] = []
+let glossary: {
+  [key: string]: {
+    text: string
+    count: number
+  }
+} = {}
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -122,6 +129,64 @@ ipcMain.handle('file:convert', async () => {
       await exportXlsx(fileName.slice(0, fileName.lastIndexOf('.')), result)
     }
   }
+})
+
+ipcMain.handle('glossary:loadSourceTexts', async () => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    filters: [{ extensions: ['xlsx'], name: 'Translation File' }],
+    defaultPath: app.getPath('downloads')
+  })
+
+  if (!result.canceled) {
+    const { filePaths } = result
+    const filePath = filePaths[0]
+
+    const workbook = XLSX.readFile(filePath)
+    console.log()
+    const data = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {
+      header: 1
+    }) as [[key: string, text: string]]
+    data.shift()
+    const processedData = data
+      .filter((value) => value[1] !== '')
+      .map((value) => ({ key: value[0], text: value[1] }))
+
+    glossarySourceTexts = processedData
+
+    return processedData
+  }
+})
+
+ipcMain.handle('glossary:updateGlossaryEntry', async (event, key: string, entry: string) => {
+  let count = 0
+
+  for (const datum of glossarySourceTexts) {
+    datum.text
+      .toLowerCase()
+      .split(' ')
+      .forEach((word) => {
+        if (word.includes(entry.toLowerCase())) count++
+      })
+  }
+
+  glossary[key] = { text: entry, count: count }
+})
+
+ipcMain.handle('glossary:addGlossaryEntry', async (event, entry: string) => {
+  const uuid = crypto.randomUUID()
+  let count = 0
+
+  for (const datum of glossarySourceTexts) {
+    datum.text
+      .toLowerCase()
+      .split(' ')
+      .forEach((word) => {
+        if (word.includes(entry.toLowerCase())) count++
+      })
+  }
+
+  glossary[uuid] = { text: entry, count: count }
+  return { key: uuid, text: entry, count: count }
 })
 
 const exportXlsx = async (fileName: string, input: [key: string, value: string][]) => {
