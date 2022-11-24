@@ -20,13 +20,13 @@ const api = {
     addGlossaryEntry: async (
       entry: string
     ): Promise<{ key: string; text: string; count: number }> => {
-      return await ipcRenderer.invoke('glossary:addGlossaryEntry')
+      return await ipcRenderer.invoke('glossary:addGlossaryEntry', entry)
     },
     updateGlossaryEntry: async (
       key: string,
       entry: string
     ): Promise<{ key: string; text: string; count: number }> => {
-      return await ipcRenderer.invoke('glossary:updateGlossaryEntry')
+      return await ipcRenderer.invoke('glossary:updateGlossaryEntry', key, entry)
     },
     exportGlossary: async (): Promise<boolean> => {
       return await ipcRenderer.invoke('glossary:exportGlossary')

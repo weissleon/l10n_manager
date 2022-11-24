@@ -6,21 +6,25 @@ import TextSegmentViewer from "../components/TextSegmentViewer.vue";
 const TXT_TITLE = `Create Glossary`
 const TXT_LOAD_TEXT_LIST = "Load Texts"
 const TXT_TITLE_GLOSSARY = "Glossary"
-
+const TXT_BTN_EXPORT_GLOSSARY = "Export Glossary"
 const glossarySourceTexts = ref<{ key: string, text: string }[]>([])
-const glossaryEntries = ref<{ key: string, text: string, count: number }[]>([])
+const glossaryEntries = ref<{ [key: string]: { text: string, count: number } }>({})
+const glossaryEntriesCache = ref<string[]>([])
 const inputEntry = ref<string>("")
 const currentIndex = ref<number>(0)
 
 const viewerTexts = computed(() => glossarySourceTexts.value.map((value) => value.text))
 
-const addGlossaryEntry = (e: Event) => {
+const addGlossaryEntry = async (e: Event) => {
     const { value } = (e.target as HTMLInputElement)
     if (value === "") return
-    if (!glossaryEntries.value.includes(value.toLowerCase())) {
-        glossaryEntries.value.push(value.toLowerCase())
+    if (!glossaryEntriesCache.value.includes(value.toLowerCase())) {
+        const entry = await window.api.glossary.addGlossaryEntry(value)
+        glossaryEntries.value[entry.key] = { text: entry.text, count: entry.count }
+        glossaryEntriesCache.value.push(value.toLowerCase())
         inputEntry.value = ""
     }
+
 }
 
 const loadSourceTexts = async () => {
@@ -28,16 +32,18 @@ const loadSourceTexts = async () => {
     glossarySourceTexts.value = result
 }
 
-const updateGlossary = (newEntries: string[]) => {
-    const filteredEntries = newEntries.filter(value => !glossaryEntries.value.includes(value.toLowerCase()))
-    // window.api.glossary.setGlossaryEntry()
-    // glossaryEntries.value = filteredEntries
+const updateGlossary = async (newEntry: { key: string, newText: string }) => {
+    const { key, newText } = newEntry
+    console.log(key, newText)
+    const oldText = glossaryEntries.value[key].text
+    const entry = await window.api.glossary.updateGlossaryEntry(key, newText)
+    glossaryEntries.value[entry.key] = { text: entry.text, count: entry.count }
+    glossaryEntriesCache.value[glossaryEntriesCache.value.indexOf(oldText)] = entry.text
 }
 
-watch(currentIndex, () => {
-    console.log("current index changed!", currentIndex.value)
-})
-
+const exportGlossary = async () => {
+    window.api.glossary.exportGlossary()
+}
 
 </script>
 
@@ -82,19 +88,22 @@ watch(currentIndex, () => {
         </section>
         <section
             class="flex gap-y-40 flex-col w-full items-center flex-wrap justify-center row-start-2 row-end-3 col-start-2 col-end-3">
-            <TextSegmentViewer v-model:current-index="currentIndex" :texts="viewerTexts" :glossary="glossaryEntries" />
+            <TextSegmentViewer v-model:current-index="currentIndex" :texts="viewerTexts"
+                :glossary="glossaryEntriesCache" />
             <input class="text-2xl border-slate-200 border-2 rounded-md p-4" @keydown.enter="addGlossaryEntry"
                 id="input-entry" v-model="inputEntry" placeholder="Enter the entry" type="text">
         </section>
 
         <!-- right section -->
-        <section class="row-start-2 row-end-3 col-start-3 col-end-4">
-            <section>
+        <section
+            class="grid overflow-hidden h-full w-full grid-rows-[auto_1fr] row-start-2 row-end-3 col-start-3 col-end-4">
+            <section class="flex items-center gap-4">
                 <h1>{{ TXT_TITLE_GLOSSARY }}</h1>
+                <button @click="exportGlossary" class="p-2 bg-red-400 rounded-md">{{ TXT_BTN_EXPORT_GLOSSARY }}</button>
             </section>
 
-            <section>
-                <GlossaryList :model-value="glossaryEntries" @update:model-value="updateGlossary" />
+            <section class="overflow-y-auto">
+                <GlossaryList :entries="glossaryEntries" @update:entry="updateGlossary" />
             </section>
         </section>
     </div>

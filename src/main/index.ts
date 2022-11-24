@@ -142,14 +142,13 @@ ipcMain.handle('glossary:loadSourceTexts', async () => {
     const filePath = filePaths[0]
 
     const workbook = XLSX.readFile(filePath)
-    console.log()
     const data = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {
       header: 1
     }) as [[key: string, text: string]]
     data.shift()
     const processedData = data
-      .filter((value) => value[1] !== '')
-      .map((value) => ({ key: value[0], text: value[1] }))
+      .filter((value) => value[1] !== '' && value[1] !== undefined)
+      .map((value) => ({ key: value[0], text: value[1].toString() }))
 
     glossarySourceTexts = processedData
 
@@ -161,15 +160,14 @@ ipcMain.handle('glossary:updateGlossaryEntry', async (event, key: string, entry:
   let count = 0
 
   for (const datum of glossarySourceTexts) {
-    datum.text
-      .toLowerCase()
-      .split(' ')
-      .forEach((word) => {
-        if (word.includes(entry.toLowerCase())) count++
-      })
+    const regex = entry.replace(/\+/gi, '\\$&')
+    const occurrence = (datum.text.toLowerCase().match(new RegExp(`${regex}`, 'gi')) || []).length
+    count += occurrence
   }
 
   glossary[key] = { text: entry, count: count }
+
+  return { key: key, text: entry, count: count }
 })
 
 ipcMain.handle('glossary:addGlossaryEntry', async (event, entry: string) => {
@@ -177,16 +175,24 @@ ipcMain.handle('glossary:addGlossaryEntry', async (event, entry: string) => {
   let count = 0
 
   for (const datum of glossarySourceTexts) {
-    datum.text
-      .toLowerCase()
-      .split(' ')
-      .forEach((word) => {
-        if (word.includes(entry.toLowerCase())) count++
-      })
+    if (typeof datum.text !== 'string') console.log('NOT STRING!')
+
+    const regex = entry.replace(/\+/gi, '\\$&')
+    const occurrence = (datum.text.toLowerCase().match(new RegExp(`${regex}`, 'gi')) || []).length
+    count += occurrence
   }
 
   glossary[uuid] = { text: entry, count: count }
   return { key: uuid, text: entry, count: count }
+})
+
+ipcMain.handle('glossary:exportGlossary', async (event) => {
+  const sourceData: [text: string, count: string][] = [['text', 'count']]
+  for (const id in glossary) {
+    sourceData.push([glossary[id].text, glossary[id].count.toString()])
+  }
+
+  await exportXlsx('filename', sourceData)
 })
 
 const exportXlsx = async (fileName: string, input: [key: string, value: string][]) => {
