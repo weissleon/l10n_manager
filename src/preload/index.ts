@@ -31,6 +31,17 @@ const api = {
     exportGlossary: async (): Promise<boolean> => {
       return await ipcRenderer.invoke('glossary:exportGlossary')
     }
+  },
+  mt: {
+    loadTextFile: async (): Promise<string[][]> => {
+      return await ipcRenderer.invoke('mt:loadTextFile')
+    },
+    translateTextFile: async (): Promise<boolean> => {
+      return await ipcRenderer.invoke('mt:translateTextFile')
+    },
+    translateSingleText: async (text: string): Promise<string> => {
+      return await ipcRenderer.invoke('mt:translateSingleText')
+    }
   }
 }
 

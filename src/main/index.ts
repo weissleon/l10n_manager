@@ -6,7 +6,10 @@ import * as hi from 'fs'
 import * as TOML from 'toml'
 import * as XLSX from 'xlsx'
 import * as crypto from 'node:crypto'
+import { config } from 'dotenv'
 
+const axios = require('axios')
+config()
 XLSX.set_fs(hi)
 
 let mainWindow: BrowserWindow = null
@@ -308,3 +311,39 @@ function checkDataType(input) {
 }
 // In this file you can include the rest of your app"s specific main process
 // code. You can also put them in separate files and require them here.
+
+ipcMain.handle('mt:loadTextFile', (event) => {
+  console.log('Load Text File')
+})
+
+ipcMain.handle('mt:translateTextFile', (event) => {
+  console.log('Translate Text File')
+})
+
+ipcMain.handle('mt:translateSingleText', async (event, text: string) => {
+  const apiEndpoint = 'https://naveropenapi.apigw.ntruss.com/nmt/v1/translation	'
+  console.log('Translate Single Text')
+  const id = process.env.PAPAGO_CLIENT_ID
+  const secret = process.env.PAPAGO_CLIENT_SECRET
+  console.log(id, secret)
+  try {
+    const result = await axios.post(
+      apiEndpoint,
+      { source: 'en', target: 'ko', text: 'Look at me' },
+      {
+        headers: {
+          'X-NCP-APIGW-API-KEY-ID': id,
+          'X-NCP-APIGW-API-KEY': secret,
+          'Content-Type': 'application/json'
+        }
+      }
+    )
+
+    console.log(result.data.message)
+  } catch (error: any) {
+    console.log(error)
+    // for (const key in error) {
+    //   console.log(error[key])
+    // }
+  }
+})

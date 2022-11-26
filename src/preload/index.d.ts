@@ -17,6 +17,11 @@ declare global {
         ) => Promise<{ key: string; text: string; count: number }>
         exportGlossary: () => Promise<boolean>
       }
+      mt: {
+        loadTextFile: () => Promise<string[][]>
+        translateTextFile: () => Promise<boolean>
+        translateSingleText: (text: string) => Promise<string>
+      }
     }
   }
 }
