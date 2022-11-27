@@ -16,6 +16,7 @@ declare global {
           entry: string
         ) => Promise<{ key: string; text: string; count: number }>
         exportGlossary: () => Promise<boolean>
+        postprocessGlossary: () => Promise<boolean>
       }
       mt: {
         loadTextFile: () => Promise<string[][]>

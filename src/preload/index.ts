@@ -30,6 +30,9 @@ const api = {
     },
     exportGlossary: async (): Promise<boolean> => {
       return await ipcRenderer.invoke('glossary:exportGlossary')
+    },
+    postprocessGlossary: async (): Promise<boolean> => {
+      return await ipcRenderer.invoke('glossary:postprocessGlossary')
     }
   },
   mt: {
