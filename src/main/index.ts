@@ -328,7 +328,11 @@ ipcMain.handle('mt:loadTextFile', async (event) => {
   const workbook = XLSX.readFile(filePath)
   const worksheet = workbook.Sheets[workbook.SheetNames[0]]
 
-  const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: true }) as string[][]
+  const data = XLSX.utils.sheet_to_json(worksheet, {
+    header: 1,
+    blankrows: true,
+    rawNumbers: false
+  }) as string[][]
 
   translateSourceData = data
 })
@@ -336,24 +340,36 @@ ipcMain.handle('mt:loadTextFile', async (event) => {
 ipcMain.handle('mt:translateTextFile', async (event) => {
   if (translateSourceData.length === 0) return
 
-  const translatedData = []
+  const translatedData: [key: string, value: string][] = []
 
-  console.log(translateSourceData)
+  const promises: Promise<string>[] = []
+  for (const sourceData of translateSourceData) {
+    if (sourceData[0] === undefined) continue
+    const result = sourceData[0].match(/^\s+$/gi)
+    if (result !== null) continue
+    const promise = translate(sourceData[0])
+    promises.push(promise)
+  }
 
-  // const promises: Promise<string>[] = []
-  // for (const sourceData of translateSourceData) {
-  //   const promise = translate(sourceData[0])
-  //   promises.push(promise)
-  // }
+  const result = await Promise.allSettled(promises)
 
-  // const result = await Promise.allSettled(promises)
+  console.log(result)
 
-  // let index = 0
-  // for (const data of result) {
-  //   if(translateSourceData[0]===undefined || translateSourceData[0]===null)
-  // }
+  let index = 0
+  for (const sourceData of translateSourceData) {
+    const source = sourceData[0]
+    if (source === undefined || source.match(/^\s*$/gi) !== null) {
+      translatedData.push([source, source])
+    } else {
+      const data = result[index]
+      if (data.status === 'fulfilled') {
+        translatedData.push([source, data.value])
+        index++
+      }
+    }
+  }
 
-  // console.log(result)
+  await exportXlsx('Pretranslated', translatedData)
 })
 
 ipcMain.handle('mt:translateSingleText', async (event, text: string) => {

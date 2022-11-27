@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import GlossaryList from '@renderer/components/GlossaryList.vue';
 import TextSegmentEntry from '@renderer/components/TextSegmentEntry.vue';
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import TextSegmentViewer from "../components/TextSegmentViewer.vue";
 const TXT_TITLE = `Create Glossary`
 const TXT_LOAD_TEXT_LIST = "Load Texts"
