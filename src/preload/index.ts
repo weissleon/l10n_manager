@@ -40,7 +40,7 @@ const api = {
       return await ipcRenderer.invoke('mt:translateTextFile')
     },
     translateSingleText: async (text: string): Promise<string> => {
-      return await ipcRenderer.invoke('mt:translateSingleText')
+      return await ipcRenderer.invoke('mt:translateSingleText', text)
     }
   }
 }

@@ -21,6 +21,7 @@ let glossary: {
     count: number
   }
 } = {}
+let translateSourceData: string[][] = []
 function createWindow(): void {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -312,24 +313,63 @@ function checkDataType(input) {
 // In this file you can include the rest of your app"s specific main process
 // code. You can also put them in separate files and require them here.
 
-ipcMain.handle('mt:loadTextFile', (event) => {
-  console.log('Load Text File')
+ipcMain.handle('mt:loadTextFile', async (event) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    filters: [
+      { extensions: ['xlsx'], name: 'Text File' },
+      { extensions: ['*'], name: 'All Files' }
+    ]
+  })
+
+  if (result.canceled) return
+
+  const filePath = result.filePaths[0]
+
+  const workbook = XLSX.readFile(filePath)
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+
+  const data = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: true }) as string[][]
+
+  translateSourceData = data
 })
 
-ipcMain.handle('mt:translateTextFile', (event) => {
-  console.log('Translate Text File')
+ipcMain.handle('mt:translateTextFile', async (event) => {
+  if (translateSourceData.length === 0) return
+
+  const translatedData = []
+
+  console.log(translateSourceData)
+
+  // const promises: Promise<string>[] = []
+  // for (const sourceData of translateSourceData) {
+  //   const promise = translate(sourceData[0])
+  //   promises.push(promise)
+  // }
+
+  // const result = await Promise.allSettled(promises)
+
+  // let index = 0
+  // for (const data of result) {
+  //   if(translateSourceData[0]===undefined || translateSourceData[0]===null)
+  // }
+
+  // console.log(result)
 })
 
 ipcMain.handle('mt:translateSingleText', async (event, text: string) => {
+  return await translate(text)
+})
+
+const translate = async (text: string): Promise<string> => {
   const apiEndpoint = 'https://naveropenapi.apigw.ntruss.com/nmt/v1/translation	'
-  console.log('Translate Single Text')
+  const sourceLang = 'en'
+  const targetLang = 'ko'
   const id = process.env.PAPAGO_CLIENT_ID
   const secret = process.env.PAPAGO_CLIENT_SECRET
-  console.log(id, secret)
   try {
     const result = await axios.post(
       apiEndpoint,
-      { source: 'en', target: 'ko', text: 'Look at me' },
+      { source: sourceLang, target: targetLang, text: text },
       {
         headers: {
           'X-NCP-APIGW-API-KEY-ID': id,
@@ -339,11 +379,14 @@ ipcMain.handle('mt:translateSingleText', async (event, text: string) => {
       }
     )
 
-    console.log(result.data.message)
+    const translatedText = result.data.message.result.translatedText
+    return translatedText
   } catch (error: any) {
     console.log(error)
     // for (const key in error) {
     //   console.log(error[key])
     // }
+
+    return ''
   }
-})
+}
