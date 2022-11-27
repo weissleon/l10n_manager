@@ -7,6 +7,8 @@ import * as TOML from 'toml'
 import * as XLSX from 'xlsx'
 import * as crypto from 'node:crypto'
 import { config } from 'dotenv'
+import pluralize from 'pluralize'
+import capitalize from 'capitalize'
 
 const axios = require('axios')
 config()
@@ -199,6 +201,47 @@ ipcMain.handle('glossary:exportGlossary', async (event) => {
   await exportXlsx('filename', sourceData)
 })
 
+ipcMain.handle('glossary:postprocessGlossary', async (event) => {
+  const result = await dialog.showOpenDialog(mainWindow, {
+    filters: [
+      { extensions: ['xlsx'], name: 'Glossary File' },
+      { extensions: ['*'], name: 'All Files' }
+    ]
+  })
+
+  if (result.canceled) return
+
+  const filePath = result.filePaths[0]
+
+  const workbook = XLSX.readFile(filePath)
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]]
+
+  const data = XLSX.utils.sheet_to_json(worksheet, {
+    header: 1,
+    rawNumbers: false
+  }) as string[][]
+
+  const processedGlossary: [key: string, value: string][] = []
+
+  for (const datum of data) {
+    const originalText = datum[0]
+    const capitalizedText = capitalize(originalText, true)
+    const uppercaseText = datum[0].toUpperCase()
+    const pluralizedText = pluralize(capitalizedText)
+    const pluralizedText2 = pluralize(uppercaseText)
+    const pluralizedText3 = pluralize(originalText)
+
+    processedGlossary.push([originalText, datum[1]])
+    processedGlossary.push([capitalizedText, datum[1]])
+    processedGlossary.push([uppercaseText, datum[1]])
+    processedGlossary.push([pluralizedText, datum[1]])
+    processedGlossary.push([pluralizedText2, datum[1]])
+    processedGlossary.push([pluralizedText3, datum[1]])
+  }
+
+  await exportXlsx('finalGlossary', processedGlossary)
+})
+
 const exportXlsx = async (fileName: string, input: [key: string, value: string][]) => {
   const workbook = XLSX.utils.book_new()
   const worksheet = XLSX.utils.aoa_to_sheet(input)
@@ -353,8 +396,6 @@ ipcMain.handle('mt:translateTextFile', async (event) => {
 
   const result = await Promise.allSettled(promises)
 
-  console.log(result)
-
   let index = 0
   for (const sourceData of translateSourceData) {
     const source = sourceData[0]
@@ -385,7 +426,12 @@ const translate = async (text: string): Promise<string> => {
   try {
     const result = await axios.post(
       apiEndpoint,
-      { source: sourceLang, target: targetLang, text: text },
+      {
+        source: sourceLang,
+        target: targetLang,
+        text: text,
+        glossaryKey: '3064585e-25e8-4f59-a884-1233209b66f4'
+      },
       {
         headers: {
           'X-NCP-APIGW-API-KEY-ID': id,
