@@ -226,14 +226,14 @@ ipcMain.handle('glossary:postprocessGlossary', async (event) => {
   for (const datum of data) {
     const originalText = datum[0]
     const capitalizedText = capitalize(originalText, true)
-    const uppercaseText = datum[0].toUpperCase()
+    const eachCapitalText = capitalize.words(originalText)
     const pluralizedText = pluralize(capitalizedText)
-    const pluralizedText2 = pluralize(uppercaseText)
+    const pluralizedText2 = pluralize(eachCapitalText)
     const pluralizedText3 = pluralize(originalText)
 
     processedGlossary.push([originalText, datum[1]])
     processedGlossary.push([capitalizedText, datum[1]])
-    processedGlossary.push([uppercaseText, datum[1]])
+    processedGlossary.push([eachCapitalText, datum[1]])
     processedGlossary.push([pluralizedText, datum[1]])
     processedGlossary.push([pluralizedText2, datum[1]])
     processedGlossary.push([pluralizedText3, datum[1]])
@@ -387,7 +387,9 @@ ipcMain.handle('mt:translateTextFile', async (event) => {
 
   const promises: Promise<string>[] = []
   for (const sourceData of translateSourceData) {
-    if (sourceData[0] === undefined) continue
+    if (sourceData[0] === undefined || sourceData[0] === '') {
+      continue
+    }
     const result = sourceData[0].match(/^\s+$/gi)
     if (result !== null) continue
     const promise = translate(sourceData[0])
@@ -399,7 +401,7 @@ ipcMain.handle('mt:translateTextFile', async (event) => {
   let index = 0
   for (const sourceData of translateSourceData) {
     const source = sourceData[0]
-    if (source === undefined || source.match(/^\s*$/gi) !== null) {
+    if (source === undefined || source.match(/^\s*$/gi) !== null || sourceData[0] === '') {
       translatedData.push([source, source])
     } else {
       const data = result[index]
@@ -430,7 +432,7 @@ const translate = async (text: string): Promise<string> => {
         source: sourceLang,
         target: targetLang,
         text: text,
-        glossaryKey: '3064585e-25e8-4f59-a884-1233209b66f4'
+        glossaryKey: 'a748a867-f95d-47f1-8f1e-5577f4879408'
       },
       {
         headers: {
